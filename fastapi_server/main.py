@@ -9,6 +9,8 @@ from typing import Optional , List
 from fastapi.middleware.cors import CORSMiddleware
 from config.api import apikey
 import random
+import httpx
+from fastapi.responses import JSONResponse
 
 
 app = FastAPI()
@@ -317,9 +319,11 @@ def get_stock_list(search: str = Query("", min_length=1)) -> List[dict]:
     if search:
         # This will match names that start with or include the search term
         query = """
-        SELECT * FROM instruments 
-        WHERE name LIKE %s OR name LIKE %s LIMIT 10
-        """
+            SELECT * FROM instruments 
+            WHERE (name LIKE %s OR name LIKE %s) 
+            AND instrument_type = 'EQ'
+           LIMIT 10
+           """
         params = (f"{search}%", f"%{search}%")
     else:
         query = """
@@ -368,10 +372,10 @@ def generate_access_token(request_token: str,current_user: dict = Depends(isAuth
 @app.post("/place_order/")
 def place_order(
     tradingsymbol: str,
+    price: float,
     exchange: str = "NSE",
     transaction_type: str = Query(..., regex="^(BUY|SELL)$"),
     quantity: int = Query(..., gt=0),
-    price: float = Query(..., gt=0),
     order_type: str = "LIMIT",
     current_user: dict = Depends(isAuthenticated),
 ):
@@ -414,3 +418,20 @@ def save_access_token(access_token: str, current_user: dict = Depends(isAuthenti
     
 
 
+@app.get("/kite/orders")
+async def get_holdings(current_user: dict = Depends(isAuthenticated),):
+     query = "SELECT access_token FROM users WHERE email = %s"
+     values = (current_user['email'],)
+     user = execute_query(query, values)
+     access_token = user[0]['access_token']
+     print(user[0]['access_token'],)
+     if not access_token:
+            raise HTTPException(status_code=401, detail="User not authenticated")
+
+     url = "https://api.kite.trade/orders"
+     headers = {"Authorization": f"token {apikey['API_KEY']}:{access_token}"}
+
+     async with httpx.AsyncClient() as client:
+        response = await client.get(url, headers=headers)
+
+     return JSONResponse(content=response.json())

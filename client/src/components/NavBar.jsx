@@ -25,13 +25,12 @@ const NavBar = () => {
     <div className="flex justify-between items-center p-4 bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-gray-200">
       <ul className="flex gap-4">
         <NavLink to='/'>Home</NavLink>
-
-
+        <NavLink to='/orderlist'>Orders</NavLink>
       </ul>
 
       <div className="flex items-center gap-4 ">
         <button onClick={handleKiteLogin}>
-          Trading Account Login
+          Broker Login
         </button>
 
         {

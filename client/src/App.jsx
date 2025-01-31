@@ -6,6 +6,7 @@ import PrivateRoute from "./components/PrivateRoute"
 import ForgetPassword from "./pages/ForgetPassword"
 import Home from "./pages/Home"
 import Callback from "./pages/Callback"
+import OrderList from "./pages/OrderList"
 
 
 const App = () => {
@@ -15,6 +16,7 @@ const App = () => {
       <Routes>
         <Route path="" element={<PrivateRoute />} >
           <Route path="/" element={<Home />} />
+          <Route path="/orderlist" element={<OrderList />} />
         </Route>
         <Route path="/broker-login" element={<Callback />} />
         <Route path="/signin" element={<Signin />} />

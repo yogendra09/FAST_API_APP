@@ -7,14 +7,14 @@ export default function StockTile({ stock, setSelectedStock }) {
             {/* Stock Name and Event */}
             <div className="flex flex-col">
                 <span className="text-green-500 font-semibold text-sm">{stock.name}</span>
-                <span className="text-xs text-blue-500">EVENT</span>
+                <span className="text-xs text-blue-500">{stock.segment}</span>
             </div>
 
             <div className=" flex gap-4 items-end">
                 <span className="text-gray-600">{stock.last_price}</span>
-                <span className="text-green-500">1.34%</span>
+                <span className="text-green-500">{stock.instrument_type}</span>
                 <span className="text-green-500 flex items-center">
-                    <FaChartLine size={14} className="mr-1" /> 2317.50
+                    <FaChartLine size={14} className="mr-1" /> {stock.segment}
                 </span>
             </div>
 

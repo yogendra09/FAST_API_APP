@@ -10,27 +10,36 @@ import axios from "@/utils/axios";
 
 const TradingInterface = ({ SelectedStock }) => {
     const [mode, setMode] = useState('buy'); // 'buy' or 'sell'
-    const [orderType, setOrderType] = useState('longterm');
+    // const [orderType, setOrderType] = useState('longterm');
     const [limitType, setLimitType] = useState('MARKET');
     const [orderQty, setorderQty] = useState(1);
     const [stockMode, setStockMode] = useState("nse"); // Default value is "nse"
+    const [orderPrice, setorderPrice] = useState(SelectedStock?.last_price);
+
+
+   const [variety, setVariety] = useState("regular");
+   const [product, setProduct] = useState("CNC");
+
+
+
 
     const getThemeColor = () => mode === 'buy' ? 'bg-blue-500' : 'bg-orange-500';
     const getButtonColor = () => mode === 'buy' ? 'bg-blue-500 hover:bg-blue-600' : 'bg-orange-500 hover:bg-orange-600';
 
     const placeOrder = async () => {
-        console.log("Order");
+        console.log("Order", variety, product, orderQty, orderPrice, limitType, mode, stockMode,limitType);
 
         try {
-            console.log('Placing order...',localStorage.getItem('kite_token'),import.meta.env.VITE_API_KEY);
-            
-            const response = await axios.post(`/place_order/?tradingsymbol=${SelectedStock.tradingsymbol}&exchange=${stockMode.toUpperCase()}&transaction_type=${mode.toUpperCase()}&quantity=${orderQty}&price=${mode === 'buy' ? 222.5 : 2318.6}&order_type=${limitType.toUpperCase()}`, {}, {
-                headers: {
-                    'Authorization': `token ${import.meta.env.VITE_API_KEY}:${localStorage.getItem('kite_token')}`,
-                }
-                
-            });
-            console.log('Order placed successfully', response.data);
+
+            const URL = `/place_order/?tradingsymbol=${SelectedStock.tradingsymbol}&exchange=${stockMode.toUpperCase()}&transaction_type=${mode.toUpperCase()}&quantity=${orderQty}&price=${mode === 'buy' ? SelectedStock.last_price : SelectedStock.last_price}&order_type=${limitType.toUpperCase()}`
+
+            // const response = await axios.post(URL, {}, {
+            //     headers: {
+            //         'Authorization': `token ${import.meta.env.VITE_API_KEY}:${localStorage.getItem('kite_token')}`,
+            //     }
+
+            // });
+            // console.log('Order placed successfully', response.data);
         } catch (error) {
             console.error('Error placing order', error.response ? error.response.data : error.message);
         }
@@ -51,7 +60,7 @@ const TradingInterface = ({ SelectedStock }) => {
                                 onChange={() => setStockMode("bse")}
                             />
                             <span className="opacity-80">BSE</span>
-                            <span>₹{mode === "buy" ? "222.50" : "2,318.75"}</span>
+                            <span>₹{mode === "buy" ? SelectedStock?.last_price : SelectedStock?.last_price}</span>
                         </div>
                         <div className="flex items-center gap-2">
                             <Input
@@ -70,27 +79,25 @@ const TradingInterface = ({ SelectedStock }) => {
             </div>
 
             <CardContent className="p-4">
-                <Tabs defaultValue="regular" className="mb-4">
-                    <TabsList className="grid grid-cols-6">
+                <Tabs defaultValue="regular" className="mb-4" onValueChange={(value) => setVariety(value)}>
+                    <TabsList className="grid grid-cols-6" >
                         <TabsTrigger value="quick">Quick</TabsTrigger>
                         <TabsTrigger value="regular">Regular</TabsTrigger>
                         <TabsTrigger value="amo">AMO</TabsTrigger>
-                        <TabsTrigger value="mtf">MTF</TabsTrigger>
-                        <TabsTrigger value="iceberg">Iceberg</TabsTrigger>
-                        <TabsTrigger value="cover">Cover</TabsTrigger>
+    
                     </TabsList>
                 </Tabs>
 
                 <div className="flex justify-between items-center mb-4">
-                    <RadioGroup defaultValue="longterm" className="flex gap-8">
+                    <RadioGroup value={product} className="flex gap-8" onValueChange={(value) => setProduct(value)}>
                         <div className="flex items-center gap-2">
-                            <RadioGroupItem value="intraday" id="intraday" />
+                            <RadioGroupItem value="MIS" id="intraday" />
                             <label htmlFor="intraday" className="text-sm">
                                 Intraday <span className="text-gray-400">MIS</span>
                             </label>
                         </div>
                         <div className="flex items-center gap-2">
-                            <RadioGroupItem value="longterm" id="longterm" />
+                            <RadioGroupItem value="CNC" id="longterm" />
                             <label htmlFor="longterm" className="text-sm">
                                 Longterm <span className="text-gray-400">CNC</span>
                             </label>
@@ -108,30 +115,30 @@ const TradingInterface = ({ SelectedStock }) => {
                     </div>
                     <div>
                         <label className="text-sm text-gray-500 mb-1 block">Price</label>
-                        <Input type="number" value={mode === 'buy' ? '222.5' : '2318.6'} />
+                        <Input disabled={limitType === 'MARKET'? true : false} type="number" value={mode === 'buy' ? orderPrice : orderPrice} onChange={(e) => setorderPrice(e.target.value)} min={mode === 'buy' ? SelectedStock?.last_price : SelectedStock?.last_price} />
                     </div>
                 </div>
 
-                <RadioGroup defaultValue="limit" className="flex gap-4 mb-4">
+                <RadioGroup value={limitType} className="flex gap-4 mb-4" onValueChange={(value) => setLimitType(value)}>
                     <div className="flex items-center gap-2">
-                        <RadioGroupItem value="market" id="market" />
+                        <RadioGroupItem value="MARKET" id="market" />
                         <label htmlFor="market">Market</label>
                     </div>
                     <div className="flex items-center gap-2">
-                        <RadioGroupItem value="limit" id="limit" />
+                        <RadioGroupItem value="LIMIT" id="limit" />
                         <label htmlFor="limit">Limit</label>
                     </div>
                     <div className="flex items-center gap-2">
-                        <RadioGroupItem value="sl" id="sl" />
+                        <RadioGroupItem value="SL" id="sl" />
                         <label htmlFor="sl">SL</label>
                     </div>
                     <div className="flex items-center gap-2">
-                        <RadioGroupItem value="sl-m" id="sl-m" />
+                        <RadioGroupItem value="SL-M" id="sl-m" />
                         <label htmlFor="sl-m">SL-M</label>
                     </div>
                 </RadioGroup>
 
-                <div className="flex justify-between items-center mb-4">
+                {/* <div className="flex justify-between items-center mb-4">
                     <div className="flex items-center gap-4">
                         <label className="flex items-center gap-2">
                             <input type="checkbox" className="rounded" />
@@ -145,7 +152,7 @@ const TradingInterface = ({ SelectedStock }) => {
                     <Button variant="ghost" className="text-blue-500 text-sm">
                         Learn more
                     </Button>
-                </div>
+                </div> */}
 
                 <div className="flex justify-between items-center mb-4">
                     <div className="flex items-center gap-2">
