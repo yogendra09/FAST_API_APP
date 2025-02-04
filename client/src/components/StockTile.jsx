@@ -1,12 +1,12 @@
 import { Button } from "@/components/ui/button"; // Assuming you're using ShadCN's Button component
 import { FaTrash, FaChartLine, FaEllipsisH } from "react-icons/fa"; // Using React icons
 
-export default function StockTile({ stock, setSelectedStock }) {
+export default function StockTile({ stock, setSelectedStock,filter }) {
     return (
         <div onClick={() => setSelectedStock(stock)} className="w-full flex items-center justify-between  border  p-4">
             {/* Stock Name and Event */}
             <div className="flex flex-col">
-                <span className="text-green-500 font-semibold text-sm">{stock.name}</span>
+                <span className="text-green-500 font-semibold text-sm">{ filter == "EQ" ? stock.name : stock.tradingsymbol}</span>
                 <span className="text-xs text-blue-500">{stock.segment}</span>
             </div>
 

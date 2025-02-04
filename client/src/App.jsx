@@ -7,6 +7,7 @@ import ForgetPassword from "./pages/ForgetPassword"
 import Home from "./pages/Home"
 import Callback from "./pages/Callback"
 import OrderList from "./pages/OrderList"
+import Profile from "./pages/Profile"
 
 
 const App = () => {
@@ -17,6 +18,7 @@ const App = () => {
         <Route path="" element={<PrivateRoute />} >
           <Route path="/" element={<Home />} />
           <Route path="/orderlist" element={<OrderList />} />
+          <Route path="/profile" element={<Profile />} />
         </Route>
         <Route path="/broker-login" element={<Callback />} />
         <Route path="/signin" element={<Signin />} />

@@ -1,7 +1,7 @@
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from fastapi import HTTPException
-DATABASE_URL = "postgresql://postgres:1234@localhost:5432/my_db"
+DATABASE_URL = "postgresql://postgres:Eulogik$321@localhost:5432/my_db"
 
 def init_connect():
     connection = psycopg2.connect(DATABASE_URL)

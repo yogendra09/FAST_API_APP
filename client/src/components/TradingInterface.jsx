@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -8,17 +8,16 @@ import { ChevronDown, RefreshCw } from 'lucide-react';
 import { Switch } from "@/components/ui/switch"
 import axios from "@/utils/axios";
 
-const TradingInterface = ({ SelectedStock }) => {
+const TradingInterface = ({ SelectedStock ,filter}) => {
     const [mode, setMode] = useState('buy'); // 'buy' or 'sell'
     // const [orderType, setOrderType] = useState('longterm');
     const [limitType, setLimitType] = useState('MARKET');
     const [orderQty, setorderQty] = useState(1);
     const [stockMode, setStockMode] = useState("nse"); // Default value is "nse"
     const [orderPrice, setorderPrice] = useState(SelectedStock?.last_price);
-
-
-   const [variety, setVariety] = useState("regular");
-   const [product, setProduct] = useState("CNC");
+    const [variety, setVariety] = useState("regular");
+    const [product, setProduct] = useState("CNC");
+    const [isNFO, setisNFO] = useState(false)
 
 
 
@@ -27,13 +26,24 @@ const TradingInterface = ({ SelectedStock }) => {
     const getButtonColor = () => mode === 'buy' ? 'bg-blue-500 hover:bg-blue-600' : 'bg-orange-500 hover:bg-orange-600';
 
     const placeOrder = async () => {
-        console.log("Order", variety, product, orderQty, orderPrice, limitType, mode, stockMode,limitType);
-
         try {
 
-            const URL = `/place_order/?tradingsymbol=${SelectedStock.tradingsymbol}&exchange=${stockMode.toUpperCase()}&transaction_type=${mode.toUpperCase()}&quantity=${orderQty}&price=${mode === 'buy' ? SelectedStock.last_price : SelectedStock.last_price}&order_type=${limitType.toUpperCase()}`
+            const URL = "/place_order";
 
-            // const response = await axios.post(URL, {}, {
+            const requestBody = {
+                tradingsymbol: SelectedStock.tradingsymbol,
+                exchange: stockMode.toUpperCase(),
+                transaction_type: mode.toUpperCase(),
+                quantity: orderQty,
+                price: Number(orderPrice),
+                order_type: limitType.toUpperCase(),
+                variety: variety,
+                product: product,
+            };
+
+            console.log(requestBody);
+
+            // const response = await axios.post(URL, requestBody, {
             //     headers: {
             //         'Authorization': `token ${import.meta.env.VITE_API_KEY}:${localStorage.getItem('kite_token')}`,
             //     }
@@ -45,32 +55,56 @@ const TradingInterface = ({ SelectedStock }) => {
         }
     };
 
+    useEffect(() => {
+        console.log(filter);  
+        if(filter=="CE" || filter=="PE" || filter=="FUT"){
+            setProduct("MIS")
+            setisNFO(true)
+            setStockMode("nfo")
+        }else{
+            setProduct("CNC")
+            setisNFO(false)
+            setStockMode("nse")
+        }
+    }, [filter]);
+
     return (
         <Card className="w-full max-w-xl">
             <div className={`${getThemeColor()} p-4 text-white`}>
                 <div className="flex justify-between items-center">
                     <div className="text-xl font-bold">
-                        {mode === 'buy' ? 'Buy' : 'Sell'} {SelectedStock?.name}
+                        {mode === 'buy' ? 'Buy' : 'Sell'} {SelectedStock?.tradingsymbol}
                     </div>
                     <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-2">
-                            <Input
-                                type="radio"
-                                checked={stockMode === "bse"}
-                                onChange={() => setStockMode("bse")}
-                            />
-                            <span className="opacity-80">BSE</span>
-                            <span>₹{mode === "buy" ? SelectedStock?.last_price : SelectedStock?.last_price}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <Input
-                                type="radio"
-                                checked={stockMode === "nse"}
-                                onChange={() => setStockMode("nse")}
-                            />
-                            <span className="opacity-80">NSE</span>
-                            <span>₹{mode === "buy" ? "222.50" : "2,318.60"}</span>
-                        </div>
+                        <RadioGroup value={stockMode} onValueChange={setStockMode} className="flex items-center gap-4">
+                            {
+                                !isNFO ?
+                            <>
+                            <div className="flex items-center gap-2">
+                                <RadioGroupItem value="bse" id="bse" className="" />
+                                <label htmlFor="bse" className="flex items-center gap-2 cursor-pointer">
+                                    <span className="opacity-80">BSE</span>
+                                    <span>₹{mode === "buy" ? SelectedStock?.last_price : SelectedStock?.last_price}</span>
+                                </label>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <RadioGroupItem value="nse" id="nse" className="" />
+                                <label htmlFor="nse" className="flex items-center gap-2 cursor-pointer">
+                                    <span className="opacity-80">NSE</span>
+                                    <span>₹{mode === "buy" ? SelectedStock?.last_price : SelectedStock?.last_price}</span>
+                                </label>
+                            </div>
+                            </>
+                            :
+                            <div className="flex items-center gap-2">
+                                <RadioGroupItem value="nfo" id="nfo" className="" />
+                                <label htmlFor="nfo" className="flex items-center gap-2 cursor-pointer">
+                                    <span className="opacity-80">NFO</span>
+                                    <span>₹{mode === "buy" ? SelectedStock?.last_price : SelectedStock?.last_price}</span>
+                                </label>
+                            </div>
+                            }
+                        </RadioGroup>
                     </div>
                     <div>
                         <Switch checked={mode == 'sell'} onCheckedChange={(checked) => setMode(checked ? "sell" : "buy")} />
@@ -84,7 +118,7 @@ const TradingInterface = ({ SelectedStock }) => {
                         <TabsTrigger value="quick">Quick</TabsTrigger>
                         <TabsTrigger value="regular">Regular</TabsTrigger>
                         <TabsTrigger value="amo">AMO</TabsTrigger>
-    
+
                     </TabsList>
                 </Tabs>
 
@@ -115,7 +149,7 @@ const TradingInterface = ({ SelectedStock }) => {
                     </div>
                     <div>
                         <label className="text-sm text-gray-500 mb-1 block">Price</label>
-                        <Input disabled={limitType === 'MARKET'? true : false} type="number" value={mode === 'buy' ? orderPrice : orderPrice} onChange={(e) => setorderPrice(e.target.value)} min={mode === 'buy' ? SelectedStock?.last_price : SelectedStock?.last_price} />
+                        <Input disabled={limitType === 'MARKET' ? true : false} type="number" value={mode === 'buy' ? orderPrice : orderPrice} onChange={(e) => setorderPrice(e.target.value)} min={mode === 'buy' ? SelectedStock?.last_price : SelectedStock?.last_price} />
                     </div>
                 </div>
 

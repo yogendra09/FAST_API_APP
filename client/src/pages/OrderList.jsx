@@ -9,7 +9,10 @@ const OrderList = () => {
 
     const { data } = await axios.get('/kite/orders')
 
-    console.log(data);
+    if(data.status == 'error') {
+      return alert("Error fetching orders");
+     
+    }
     setOrderList(data.data);
 
   }
@@ -18,12 +21,13 @@ const OrderList = () => {
     getAllOrders()
   }, [])
   return (
-    <div>
+    <div className='p-4 '>
       {
-        orderList.map((stock,index) => {
+        orderList?.length > 0 &&
+        orderList?.map((stock,index) => {
           return (
         <>
-            <div key={index} className="w-full flex items-center justify-between  border  p-4">
+            <div key={index} className="w-1/4 flex items-center justify-between  border  p-4 ">
               <div className="flex flex-col">
                 <span className="text-green-500 font-semibold text-sm">{stock.tradingsymbol}</span>
                 <span className="text-xs text-blue-500">{stock.segment}</span>

@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException, Depends, Header, Query
 from kiteconnect import KiteConnect
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from database import execute_query, execute_query_many
 from passlib.context import CryptContext
 from jose import JWTError, jwt
@@ -50,6 +50,16 @@ class Token(BaseModel):
 
 class AccessTokenRequest(BaseModel):
     access_token: str
+
+# class OrderRequest(BaseModel):
+#     tradingsymbol: str
+#     exchange: str
+#     transaction_type: str
+#     quantity: int
+#     price: float
+#     order_type: str
+#     product: str
+#     variety: str
 
 def get_password_hash(password: str) -> str:
     return pwd_context.hash(password)
@@ -314,17 +324,17 @@ def reset_password(token: str, otp: int, new_password: str):
     
     
 @app.get("/stocklist")
-def get_stock_list(search: str = Query("", min_length=1)) -> List[dict]:
+def get_stock_list(search: str = Query("", min_length=1),filter:str= Query("", min_length=1)) -> List[dict]:
 
     if search:
         # This will match names that start with or include the search term
         query = """
             SELECT * FROM instruments 
             WHERE (name LIKE %s OR name LIKE %s) 
-            AND instrument_type = 'EQ'
-           LIMIT 10
+            AND instrument_type = %s
+            LIMIT 10
            """
-        params = (f"{search}%", f"%{search}%")
+        params = (f"{search}%", f"%{search}%",filter)
     else:
         query = """
         SELECT * FROM instruments ORDER BY id ASC LIMIT 10
@@ -369,45 +379,6 @@ def generate_access_token(request_token: str,current_user: dict = Depends(isAuth
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))    
     
-@app.post("/place_order/")
-def place_order(
-    tradingsymbol: str,
-    price: float,
-    exchange: str = "NSE",
-    transaction_type: str = Query(..., regex="^(BUY|SELL)$"),
-    quantity: int = Query(..., gt=0),
-    order_type: str = "LIMIT",
-    current_user: dict = Depends(isAuthenticated),
-):
-    try:
-        
-        query = "SELECT access_token FROM users WHERE email = %s"
-        values = (current_user['email'],)
-        user = execute_query(query, values)
-        access_token = user[0]['access_token']
-        print(user[0]['access_token'],tradingsymbol,exchange,transaction_type,quantity,price,order_type)
-        if not access_token:
-            raise HTTPException(status_code=401, detail="User not authenticated")
-
-        kite.set_access_token(access_token)
-
-        order_id = kite.place_order(
-            variety=kite.VARIETY_REGULAR,
-            exchange=exchange,
-            tradingsymbol=tradingsymbol,
-            transaction_type=transaction_type,
-            quantity=quantity,
-            order_type=order_type,
-            product=kite.PRODUCT_MIS,
-            price=price
-        )
-        
-        return {"message": "Order placed successfully", "order_id": order_id}
-    
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    
-
 @app.post('/save_access_token')
 def save_access_token(access_token: str, current_user: dict = Depends(isAuthenticated)):
     try:
@@ -417,9 +388,8 @@ def save_access_token(access_token: str, current_user: dict = Depends(isAuthenti
         raise HTTPException(status_code=400, detail=str(e))
     
 
-
 @app.get("/kite/orders")
-async def get_holdings(current_user: dict = Depends(isAuthenticated),):
+async def get_orders(current_user: dict = Depends(isAuthenticated),):
      query = "SELECT access_token FROM users WHERE email = %s"
      values = (current_user['email'],)
      user = execute_query(query, values)
@@ -434,4 +404,63 @@ async def get_holdings(current_user: dict = Depends(isAuthenticated),):
      async with httpx.AsyncClient() as client:
         response = await client.get(url, headers=headers)
 
-     return JSONResponse(content=response.json())
+     return JSONResponse(content=response.json())  
+ 
+@app.get("/kite/holdings")
+async def get_holdings(current_user: dict = Depends(isAuthenticated),):
+     query = "SELECT access_token FROM users WHERE email = %s"
+     values = (current_user['email'],)
+     user = execute_query(query, values)
+     access_token = user[0]['access_token']
+     print(user[0]['access_token'],)
+     if not access_token:
+            raise HTTPException(status_code=401, detail="User not authenticated")
+
+     url = "https://api.kite.trade/portfolio/holdings"
+     headers = {"Authorization": f"token {apikey['API_KEY']}:{access_token}"}
+
+     async with httpx.AsyncClient() as client:
+        response = await client.get(url, headers=headers)
+
+     return JSONResponse(content=response.json())  
+  
+class OrderRequest(BaseModel):
+    tradingsymbol: str
+    exchange: str
+    transaction_type: str
+    quantity: int
+    price: float
+    order_type: str
+    product: str
+    variety: str  
+    
+@app.post("/place_order")
+def place_order(order: OrderRequest, current_user: dict = Depends(isAuthenticated)):
+    try:
+        query = "SELECT access_token FROM users WHERE email = %s"
+        values = (current_user['email'],)
+        user = execute_query(query, values)
+        
+        if not user or not user[0].get('access_token'):
+            raise HTTPException(status_code=401, detail="User not authenticated")
+        
+        access_token = user[0]['access_token']
+        kite.set_access_token(access_token)
+
+        order_id = kite.place_order(
+            variety=order.variety,
+            exchange=order.exchange,
+            tradingsymbol=order.tradingsymbol,
+            transaction_type=order.transaction_type,
+            quantity=order.quantity,
+            order_type=order.order_type,
+            product=order.product,
+            price=order.price
+        )
+        
+        return {"message": "Order placed successfully", "order_id": order_id}
+    
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Error placing order: {str(e)}")
+    
+
